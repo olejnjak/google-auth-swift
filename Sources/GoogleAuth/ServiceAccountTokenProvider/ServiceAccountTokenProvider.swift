@@ -87,7 +87,7 @@ public actor ServiceAccountTokenProvider: TokenProvider {
         let sa: ServiceAccount
 
         do {
-            sa = try JSONDecoder.serviceAccount.decode(
+            sa = try JSONDecoder().decode(
                 ServiceAccount.self,
                 from: .init(contentsOf: .init(filePath: serviceAccountPath))
             )

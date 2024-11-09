@@ -1,6 +1,13 @@
 import Foundation
 
 public struct ServiceAccount: Decodable, Sendable {
+    enum CodingKeys: String, CodingKey {
+        case type
+        case privateKey = "private_key"
+        case clientEmail = "client_email"
+        case tokenUri = "token_uri"
+    }
+
     public let type: String
     public let privateKey: String
     public let clientEmail: String
@@ -16,13 +23,5 @@ public struct ServiceAccount: Decodable, Sendable {
         self.privateKey = privateKey
         self.clientEmail = clientEmail
         self.tokenUri = tokenUri
-    }
-}
-
-package extension JSONDecoder {
-    static var serviceAccount: JSONDecoder {
-        let decoder = JSONDecoder()
-        decoder.keyDecodingStrategy = .convertFromSnakeCase
-        return decoder
     }
 }

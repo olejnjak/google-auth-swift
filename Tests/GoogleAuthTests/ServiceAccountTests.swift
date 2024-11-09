@@ -21,7 +21,7 @@ struct ServiceAccountTests {
         """
 
         #expect(throws: Never.self) {
-            try JSONDecoder.serviceAccount.decode(
+            try JSONDecoder().decode(
                 ServiceAccount.self,
                 from: .init(json.utf8)
             )
