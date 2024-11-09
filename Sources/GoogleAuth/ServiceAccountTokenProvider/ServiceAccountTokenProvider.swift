@@ -17,7 +17,7 @@ public actor ServiceAccountTokenProvider: TokenProvider {
 
     private let now: () -> Date
     private let expirationLeeway: TimeInterval
-    private let networkRequest: (URLRequest) async throws -> (Data, URLResponse)
+    private let networkRequest: (URLRequest) async throws -> Data
 
     private let serviceAccount: ServiceAccount
     private let scopes: [String]
@@ -28,11 +28,37 @@ public actor ServiceAccountTokenProvider: TokenProvider {
     public init(
         serviceAccount: ServiceAccount,
         scopes: [String],
+        expirationLeeway: TimeInterval = 60
+    ) async throws(Error) {
+        try await self.init(
+            serviceAccount: serviceAccount,
+            scopes: scopes,
+            expirationLeeway: expirationLeeway,
+            now: { .init() },
+            networkRequest: { try await URLSession(configuration: .default).data(for: $0).0 }
+        )
+    }
+
+    public init(
+        serviceAccountPath: String,
+        scopes: [String],
+        expirationLeeway: TimeInterval = 60
+    ) async throws(Error) {
+        try await self.init(
+            serviceAccountPath: serviceAccountPath,
+            scopes: scopes,
+            expirationLeeway: expirationLeeway,
+            now: { .init() },
+            networkRequest: { try await URLSession(configuration: .default).data(for: $0).0 }
+        )
+    }
+
+    internal init(
+        serviceAccount: ServiceAccount,
+        scopes: [String],
         expirationLeeway: TimeInterval = 60,
-        now: @escaping () -> Date = { .init() },
-        networkRequest: @escaping (URLRequest) async throws -> (Data, URLResponse) = {
-            try await URLSession(configuration: .default).data(for: $0)
-        }
+        now: @escaping () -> Date,
+        networkRequest: @escaping (URLRequest) async throws -> Data
     ) async throws(Error) {
         assert(expirationLeeway >= 0, "expirationLeeway must be non-negative")
 
@@ -51,14 +77,12 @@ public actor ServiceAccountTokenProvider: TokenProvider {
         }
     }
 
-    public init(
+    internal init(
         serviceAccountPath: String,
         scopes: [String],
         expirationLeeway: TimeInterval = 60,
-        now: @escaping () -> Date = { .init() },
-        networkRequest: @escaping (URLRequest) async throws -> (Data, URLResponse) = {
-            try await URLSession(configuration: .default).data(for: $0)
-        }
+        now: @escaping () -> Date,
+        networkRequest: @escaping (URLRequest) async throws -> Data
     ) async throws(Error) {
         let sa: ServiceAccount
 
@@ -85,7 +109,7 @@ public actor ServiceAccountTokenProvider: TokenProvider {
     public func token() async throws(TokenProviderError) -> Token {
         let iat = now()
 
-        if let token, iat.timeIntervalSince(token.expiresAt) > expirationLeeway {
+        if let token, token.expiresAt.timeIntervalSince(iat) > expirationLeeway {
             return token
         }
 
@@ -95,7 +119,7 @@ public actor ServiceAccountTokenProvider: TokenProvider {
         )
 
         let request = try createTokenRequest(jwt: jwt)
-        let (responseData, _) = try await sendTokenRequest(request)
+        let responseData = try await sendTokenRequest(request)
         let response = try decodeTokenResponse(responseData)
 
         let token = Token(
@@ -158,7 +182,7 @@ public actor ServiceAccountTokenProvider: TokenProvider {
 
     private func sendTokenRequest(
         _ request: URLRequest
-    ) async throws(TokenProviderError) -> (Data, URLResponse) {
+    ) async throws(TokenProviderError) -> Data {
         do {
             return try await networkRequest(request)
         } catch {

@@ -28,7 +28,8 @@ let package = Package(
         ),
         .testTarget(
             name: "GoogleAuthTests",
-            dependencies: ["GoogleAuth"]
+            dependencies: ["GoogleAuth"],
+            resources: [.copy("Resources/test_service_account.json")]
         ),
     ],
     swiftLanguageModes: [.v6]

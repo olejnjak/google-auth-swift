@@ -4,7 +4,7 @@ public protocol TokenProvider {
     func token() async throws(TokenProviderError) -> Token
 }
 
-public struct Token: Sendable, Codable {
+public struct Token: Sendable, Codable, Hashable {
     public let accessToken: String
     public let tokenType: String
     public let issuedAt: Date
