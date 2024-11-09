@@ -101,12 +101,16 @@ public actor ServiceAccountTokenProvider: TokenProvider {
         let (responseData, _) = try await sendTokenRequest(request)
         let response = try decodeTokenResponse(responseData)
 
-        return .init(
+        let token = Token(
             accessToken: response.accessToken,
             tokenType: response.tokenType,
             issuedAt: iat,
             expiresIn: response.expiresIn
         )
+
+        self.token = token
+
+        return token
     }
 
     // MARK: - Private helpers
