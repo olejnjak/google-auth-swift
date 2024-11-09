@@ -1,5 +1,5 @@
 import Foundation
-import GoogleAuth
+@testable import GoogleAuth
 
 extension ServiceAccount {
     static func test() -> ServiceAccount {

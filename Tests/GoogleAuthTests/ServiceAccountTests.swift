@@ -1,5 +1,5 @@
 import Foundation
-import GoogleAuth
+@testable import GoogleAuth
 import Testing
 
 struct ServiceAccountTests {

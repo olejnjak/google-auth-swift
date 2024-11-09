@@ -26,20 +26,6 @@ public actor ServiceAccountTokenProvider: TokenProvider {
     // MARK: - Initializers
 
     public init(
-        serviceAccount: ServiceAccount,
-        scopes: [String],
-        expirationLeeway: TimeInterval = 60
-    ) async throws(Error) {
-        try await self.init(
-            serviceAccount: serviceAccount,
-            scopes: scopes,
-            expirationLeeway: expirationLeeway,
-            now: { .init() },
-            networkRequest: { try await URLSession(configuration: .default).data(for: $0).0 }
-        )
-    }
-
-    public init(
         serviceAccountPath: String,
         scopes: [String],
         expirationLeeway: TimeInterval = 60
@@ -142,7 +128,7 @@ public actor ServiceAccountTokenProvider: TokenProvider {
     ) async throws(TokenProviderError) -> String {
         let jwtClaimSet = JWTClaimSet(
             issuer: .init(value: serviceAccount.clientEmail),
-            audience: .init(value: [serviceAccount.tokenUri.absoluteString]),
+            audience: .init(value: [serviceAccount.tokenURI.absoluteString]),
             scope: scopes.joined(separator: " "),
             issuedAt: .init(value: iat),
             expiration: .init(value: exp)
@@ -173,7 +159,7 @@ public actor ServiceAccountTokenProvider: TokenProvider {
             throw .init(message: "Cannot encode token request body: \(error.localizedDescription)")
         }
 
-        var request = URLRequest(url: serviceAccount.tokenUri)
+        var request = URLRequest(url: serviceAccount.tokenURI)
         request.httpMethod = "POST"
         request.httpBody = requestBody
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
