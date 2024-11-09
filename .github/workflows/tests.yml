@@ -1,0 +1,25 @@
+name: Tests
+on: 
+  push:
+    branches: 
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  tests:
+    runs-on: macos-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/cache@v4
+      with:
+        path: .build
+        key: ${{ runner.os }}-spm-${{ hashFiles('**/Package.resolved') }}
+        restore-keys: |
+          ${{ runner.os }}-spm-
+    - run: |
+        echo "${{ secrets.TEST_SA }}" | base64 -d > "$PWD"/sa.json
+        export DEVELOPER_DIR=$XCODE_16_DEVELOPER_DIR 
+        export GOOGLE_APPLICATION_CREDENTIALS=$PWD/sa.json 
+        swift test
