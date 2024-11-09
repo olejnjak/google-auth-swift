@@ -9,14 +9,13 @@ internal struct JWTClaimSet: JWTPayload {
         case expiration = "exp"
     }
 
-    let issuer: String
-    let audience: String
+    let issuer: IssuerClaim
+    let audience: AudienceClaim
     let scope: String
-    let issuedAt: Int
-    let expiration: Int
+    let issuedAt: IssuedAtClaim
+    let expiration: ExpirationClaim
 
     func verify(using algorithm: some JWTAlgorithm) async throws {
-        try ExpirationClaim(value: .init(timeIntervalSince1970: .init(expiration)))
-            .verifyNotExpired()
+        try expiration.verifyNotExpired()
     }
 }

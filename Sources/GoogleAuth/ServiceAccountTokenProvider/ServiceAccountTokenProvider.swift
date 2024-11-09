@@ -117,11 +117,11 @@ public actor ServiceAccountTokenProvider: TokenProvider {
         exp: Date
     ) async throws(TokenProviderError) -> String {
         let jwtClaimSet = JWTClaimSet(
-            issuer: serviceAccount.clientEmail,
-            audience: serviceAccount.tokenUri.absoluteString,
+            issuer: .init(value: serviceAccount.clientEmail),
+            audience: .init(value: [serviceAccount.tokenUri.absoluteString]),
             scope: scopes.joined(separator: " "),
-            issuedAt: .init(iat.timeIntervalSince1970),
-            expiration: .init(exp.timeIntervalSince1970)
+            issuedAt: .init(value: iat),
+            expiration: .init(value: exp)
         )
 
         do {
