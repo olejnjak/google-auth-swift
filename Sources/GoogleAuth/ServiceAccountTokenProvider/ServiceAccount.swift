@@ -36,3 +36,11 @@ public struct ServiceAccount: Decodable, Sendable {
         self.clientX509CertUrl = clientX509CertUrl
     }
 }
+
+package extension JSONDecoder {
+    static var serviceAccount: JSONDecoder {
+        let decoder = JSONDecoder()
+        decoder.keyDecodingStrategy = .convertFromSnakeCase
+        return decoder
+    }
+}

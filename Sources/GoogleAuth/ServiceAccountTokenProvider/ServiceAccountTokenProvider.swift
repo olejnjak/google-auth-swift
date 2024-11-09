@@ -61,12 +61,9 @@ public actor ServiceAccountTokenProvider: TokenProvider {
         }
     ) async throws(Error) {
         let sa: ServiceAccount
-        let decoder = JSONDecoder()
-        decoder.keyDecodingStrategy = .convertFromSnakeCase
-        decoder.dateDecodingStrategy = .secondsSince1970
 
         do {
-            sa = try decoder.decode(
+            sa = try JSONDecoder.serviceAccount.decode(
                 ServiceAccount.self,
                 from: .init(contentsOf: .init(filePath: serviceAccountPath))
             )
