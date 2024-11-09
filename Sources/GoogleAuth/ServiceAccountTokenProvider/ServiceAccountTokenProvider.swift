@@ -4,6 +4,13 @@ import JWTKit
 public actor ServiceAccountTokenProvider: TokenProvider {
     public enum Error: Swift.Error {
         case invalidPrivateKey
+        case cannotLoadServiceAccount
+    }
+
+    private struct AccessTokenResponse: Decodable {
+        let accessToken: String
+        let expiresIn: TimeInterval
+        let tokenType: String
     }
 
     public private(set) var token: Token?
@@ -44,6 +51,38 @@ public actor ServiceAccountTokenProvider: TokenProvider {
         }
     }
 
+    public init(
+        serviceAccountPath: String,
+        scopes: [String],
+        expirationLeeway: TimeInterval = 60,
+        now: @escaping () -> Date = { .init() },
+        networkRequest: @escaping (URLRequest) async throws -> (Data, URLResponse) = {
+            try await URLSession(configuration: .default).data(for: $0)
+        }
+    ) async throws(Error) {
+        let sa: ServiceAccount
+        let decoder = JSONDecoder()
+        decoder.keyDecodingStrategy = .convertFromSnakeCase
+        decoder.dateDecodingStrategy = .secondsSince1970
+
+        do {
+            sa = try decoder.decode(
+                ServiceAccount.self,
+                from: .init(contentsOf: .init(filePath: serviceAccountPath))
+            )
+        } catch {
+            throw .cannotLoadServiceAccount
+        }
+
+        try await self.init(
+            serviceAccount: sa,
+            scopes: scopes,
+            expirationLeeway: expirationLeeway,
+            now: now,
+            networkRequest: networkRequest
+        )
+    }
+
     // MARK: - Public interface
 
     public func token() async throws(TokenProviderError) -> Token {
@@ -60,8 +99,14 @@ public actor ServiceAccountTokenProvider: TokenProvider {
 
         let request = try createTokenRequest(jwt: jwt)
         let (responseData, _) = try await sendTokenRequest(request)
+        let response = try decodeTokenResponse(responseData)
 
-        return try decodeTokenResponse(responseData)
+        return .init(
+            accessToken: response.accessToken,
+            tokenType: response.tokenType,
+            issuedAt: iat,
+            expiresIn: response.expiresIn
+        )
     }
 
     // MARK: - Private helpers
@@ -122,13 +167,12 @@ public actor ServiceAccountTokenProvider: TokenProvider {
 
     private func decodeTokenResponse(
         _ response: Data
-    ) throws(TokenProviderError) -> Token {
+    ) throws(TokenProviderError) -> AccessTokenResponse {
         let decoder = JSONDecoder()
         decoder.keyDecodingStrategy = .convertFromSnakeCase
-        decoder.dateDecodingStrategy = .secondsSince1970
 
         do {
-            return try decoder.decode(Token.self, from: response)
+            return try decoder.decode(AccessTokenResponse.self, from: response)
         } catch {
             throw .init(message: "Unable to decode token response: \(error.localizedDescription)")
         }

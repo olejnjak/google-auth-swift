@@ -9,10 +9,6 @@ public struct Token: Sendable, Codable {
     public let tokenType: String
     public let issuedAt: Date
     public let expiresIn: TimeInterval
-    public let refreshToken: String
-    public let refreshTokenIssuedAt: Date
-    public let refreshTokenExpiresIn: TimeInterval
-    public let scope: String
 
     public var expiresAt: Date {
         issuedAt.addingTimeInterval(expiresIn)
