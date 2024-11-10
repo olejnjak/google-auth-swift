@@ -3,9 +3,9 @@ import Foundation
 import Testing
 
 struct ServiceAccountTokenProviderTests {
-    @Test(.enabled(if: ProcessInfo.processInfo.environment["GOOGLE_APPLICATION_CREDENTIALS"] != nil))
+    @Test(.enabled(if: ProcessInfo.processInfo.googleApplicationCredentials != nil))
     func realToken() async throws {
-        let path = try #require(ProcessInfo.processInfo.environment["GOOGLE_APPLICATION_CREDENTIALS"])
+        let path = try #require(ProcessInfo.processInfo.googleApplicationCredentials)
         let provider = try await ServiceAccountTokenProvider(
             serviceAccountPath: path,
             scopes: ["https://www.googleapis.com/auth/devstorage.read_only"]
