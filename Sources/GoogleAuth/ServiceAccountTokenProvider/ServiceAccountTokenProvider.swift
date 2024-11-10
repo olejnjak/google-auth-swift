@@ -7,12 +7,6 @@ public actor ServiceAccountTokenProvider: TokenProvider {
         case cannotLoadServiceAccount
     }
 
-    private struct AccessTokenResponse: Decodable {
-        let accessToken: String
-        let expiresIn: TimeInterval
-        let tokenType: String
-    }
-
     public private(set) var token: Token?
 
     private let now: () -> Date
