@@ -1,11 +1,16 @@
 import Foundation
 
+/// Token provider implementing exchange of user refresh token for a new access token
 public actor GoogleRefreshTokenProvider: TokenProvider {
+    /// Error thrown when initializing provider
     public enum Error: Swift.Error {
+        /// Unable to load credentials from given path, check path
         case cannotLoadCredentialsData
+        /// Unable to parse credentials, probably malformed
         case cannotParseCredentials
     }
-
+    
+    /// Last fetched token
     public private(set) var token: Token?
 
     private let credentials: RefreshCredentials
@@ -16,7 +21,11 @@ public actor GoogleRefreshTokenProvider: TokenProvider {
     private let now: () -> Date
 
     // MARK: - Initializers
-
+    
+    /// Create new provider with credentials on given path
+    /// - Parameters:
+    ///   - credentialsPath: Path to credentials to be loaded
+    ///   - expirationLeeway: Period before expiration when last fetched token is considered expired
     public init(
         credentialsPath: String,
         expirationLeeway: TimeInterval = 60

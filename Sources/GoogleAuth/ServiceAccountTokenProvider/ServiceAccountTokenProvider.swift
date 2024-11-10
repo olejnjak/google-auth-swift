@@ -1,12 +1,17 @@
 import Foundation
 import JWTKit
 
+/// Token provider fetching access token from a service account
 public actor ServiceAccountTokenProvider: TokenProvider {
+    /// Error thrown when creating provider
     public enum Error: Swift.Error {
+        /// Unable to parse private key from service account
         case invalidPrivateKey
+        /// Unable to parse service account
         case cannotLoadServiceAccount
     }
 
+    /// Last fetched token
     public private(set) var token: Token?
 
     private let now: () -> Date
@@ -19,6 +24,11 @@ public actor ServiceAccountTokenProvider: TokenProvider {
 
     // MARK: - Initializers
 
+    /// Create new provider for given service account
+    /// - Parameters:
+    ///   - serviceAccountPath: Path to service account to be used
+    ///   - scopes: Requested scopes
+    ///   - expirationLeeway: Period before expiration when last fetched token is considered expired
     public init(
         serviceAccountPath: String,
         scopes: [String],

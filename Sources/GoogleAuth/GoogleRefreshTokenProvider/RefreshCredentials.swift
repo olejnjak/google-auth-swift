@@ -1,4 +1,4 @@
-struct RefreshCredentials: Decodable, Sendable {
+internal struct RefreshCredentials: Decodable, Sendable {
     enum CodingKeys: String, CodingKey {
         case clientID = "client_id"
         case clientSecret = "client_secret"

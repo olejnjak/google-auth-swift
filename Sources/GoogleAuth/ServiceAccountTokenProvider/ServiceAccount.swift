@@ -1,6 +1,6 @@
 import Foundation
 
-struct ServiceAccount: Decodable, Sendable {
+internal struct ServiceAccount: Decodable, Sendable {
     enum CodingKeys: String, CodingKey {
         case type
         case privateKey = "private_key"
