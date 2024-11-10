@@ -9,7 +9,7 @@ public actor GoogleRefreshTokenProvider: TokenProvider {
     public private(set) var token: Token?
 
     private let credentials: RefreshCredentials
-    private let accessTokenURL = URL(string: "https://accounts.google.com/o/oauth2/token")!
+    private let accessTokenURL = URL(string: "https://oauth2.googleapis.com/token")!
 
     private let apiClient: APIClient
     private let expirationLeeway: TimeInterval
@@ -83,6 +83,7 @@ public actor GoogleRefreshTokenProvider: TokenProvider {
         do {
             var request = URLRequest(url: accessTokenURL)
             request.httpMethod = "POST"
+            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
             request.httpBody = try JSONEncoder().encode([
                 "client_id": credentials.clientID,
                 "client_secret": credentials.clientSecret,
