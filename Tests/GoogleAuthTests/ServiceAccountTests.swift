@@ -1,5 +1,5 @@
 import Foundation
-import GoogleAuth
+@testable import GoogleAuth
 import Testing
 
 struct ServiceAccountTests {
@@ -21,7 +21,7 @@ struct ServiceAccountTests {
         """
 
         #expect(throws: Never.self) {
-            try JSONDecoder.serviceAccount.decode(
+            try JSONDecoder().decode(
                 ServiceAccount.self,
                 from: .init(json.utf8)
             )

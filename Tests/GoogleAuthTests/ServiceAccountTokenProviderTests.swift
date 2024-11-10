@@ -28,13 +28,14 @@ struct ServiceAccountTokenProviderTests {
 
     @Test
     func tokenIsCached() async throws {
-        var tokenResponse = Data.testAccessTokenResponse(token: "token1")
+        let mockAPI = MockAPIClient()
+        mockAPI.dataBody = { _ in .testAccessTokenResponse(token: "token1") }
 
         let provider = try await ServiceAccountTokenProvider(
             serviceAccount: .test(),
             scopes: [],
             now: { .init() },
-            networkRequest: { _ in tokenResponse }
+            apiClient: mockAPI
         )
 
         await #expect(provider.token == nil)
@@ -43,7 +44,7 @@ struct ServiceAccountTokenProviderTests {
 
         #expect(await provider.token == token1)
 
-        tokenResponse = Data.testAccessTokenResponse(token: "token2")
+        mockAPI.dataBody = { _ in .testAccessTokenResponse(token: "token2") }
 
         let token2 = try await provider.token()
 

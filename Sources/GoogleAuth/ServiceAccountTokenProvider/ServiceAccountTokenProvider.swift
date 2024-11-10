@@ -7,37 +7,17 @@ public actor ServiceAccountTokenProvider: TokenProvider {
         case cannotLoadServiceAccount
     }
 
-    private struct AccessTokenResponse: Decodable {
-        let accessToken: String
-        let expiresIn: TimeInterval
-        let tokenType: String
-    }
-
     public private(set) var token: Token?
 
     private let now: () -> Date
     private let expirationLeeway: TimeInterval
-    private let networkRequest: (URLRequest) async throws -> Data
+    private let apiClient: APIClient
 
     private let serviceAccount: ServiceAccount
     private let scopes: [String]
     private let keys = JWTKeyCollection()
 
     // MARK: - Initializers
-
-    public init(
-        serviceAccount: ServiceAccount,
-        scopes: [String],
-        expirationLeeway: TimeInterval = 60
-    ) async throws(Error) {
-        try await self.init(
-            serviceAccount: serviceAccount,
-            scopes: scopes,
-            expirationLeeway: expirationLeeway,
-            now: { .init() },
-            networkRequest: { try await URLSession(configuration: .default).data(for: $0).0 }
-        )
-    }
 
     public init(
         serviceAccountPath: String,
@@ -48,8 +28,7 @@ public actor ServiceAccountTokenProvider: TokenProvider {
             serviceAccountPath: serviceAccountPath,
             scopes: scopes,
             expirationLeeway: expirationLeeway,
-            now: { .init() },
-            networkRequest: { try await URLSession(configuration: .default).data(for: $0).0 }
+            now: { .init() }
         )
     }
 
@@ -58,13 +37,13 @@ public actor ServiceAccountTokenProvider: TokenProvider {
         scopes: [String],
         expirationLeeway: TimeInterval = 60,
         now: @escaping () -> Date,
-        networkRequest: @escaping (URLRequest) async throws -> Data
+        apiClient: APIClient = URLSession(configuration: .default)
     ) async throws(Error) {
         assert(expirationLeeway >= 0, "expirationLeeway must be non-negative")
 
         self.expirationLeeway = expirationLeeway
         self.now = now
-        self.networkRequest = networkRequest
+        self.apiClient = apiClient
 
         self.serviceAccount = serviceAccount
         self.scopes = scopes
@@ -82,12 +61,12 @@ public actor ServiceAccountTokenProvider: TokenProvider {
         scopes: [String],
         expirationLeeway: TimeInterval = 60,
         now: @escaping () -> Date,
-        networkRequest: @escaping (URLRequest) async throws -> Data
+        apiClient: APIClient = URLSession(configuration: .default)
     ) async throws(Error) {
         let sa: ServiceAccount
 
         do {
-            sa = try JSONDecoder.serviceAccount.decode(
+            sa = try JSONDecoder().decode(
                 ServiceAccount.self,
                 from: .init(contentsOf: .init(filePath: serviceAccountPath))
             )
@@ -100,7 +79,7 @@ public actor ServiceAccountTokenProvider: TokenProvider {
             scopes: scopes,
             expirationLeeway: expirationLeeway,
             now: now,
-            networkRequest: networkRequest
+            apiClient: apiClient
         )
     }
 
@@ -119,8 +98,7 @@ public actor ServiceAccountTokenProvider: TokenProvider {
         )
 
         let request = try createTokenRequest(jwt: jwt)
-        let responseData = try await sendTokenRequest(request)
-        let response = try decodeTokenResponse(responseData)
+        let response = try await getToken(request)
 
         let token = Token(
             accessToken: response.accessToken,
@@ -142,7 +120,7 @@ public actor ServiceAccountTokenProvider: TokenProvider {
     ) async throws(TokenProviderError) -> String {
         let jwtClaimSet = JWTClaimSet(
             issuer: .init(value: serviceAccount.clientEmail),
-            audience: .init(value: [serviceAccount.tokenUri.absoluteString]),
+            audience: .init(value: [serviceAccount.tokenURI.absoluteString]),
             scope: scopes.joined(separator: " "),
             issuedAt: .init(value: iat),
             expiration: .init(value: exp)
@@ -173,33 +151,25 @@ public actor ServiceAccountTokenProvider: TokenProvider {
             throw .init(message: "Cannot encode token request body: \(error.localizedDescription)")
         }
 
-        var request = URLRequest(url: serviceAccount.tokenUri)
+        var request = URLRequest(url: serviceAccount.tokenURI)
         request.httpMethod = "POST"
         request.httpBody = requestBody
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         return request
     }
 
-    private func sendTokenRequest(
+    private func getToken(
         _ request: URLRequest
-    ) async throws(TokenProviderError) -> Data {
+    ) async throws(TokenProviderError) -> AccessTokenResponse {
         do {
-            return try await networkRequest(request)
+            return try await apiClient.response(for: request)
         } catch {
-            throw .init(message: "Unable to get token response: \(error.localizedDescription)")
-        }
-    }
-
-    private func decodeTokenResponse(
-        _ response: Data
-    ) throws(TokenProviderError) -> AccessTokenResponse {
-        let decoder = JSONDecoder()
-        decoder.keyDecodingStrategy = .convertFromSnakeCase
-
-        do {
-            return try decoder.decode(AccessTokenResponse.self, from: response)
-        } catch {
-            throw .init(message: "Unable to decode token response: \(error.localizedDescription)")
+            switch error {
+            case .cannotGetResponse:
+                throw .init(message: "Unable to get token response")
+            case .cannotParseResponse:
+                throw .init(message: "Unable to decode token response")
+            }
         }
     }
 }
