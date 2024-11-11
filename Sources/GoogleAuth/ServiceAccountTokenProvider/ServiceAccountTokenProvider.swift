@@ -114,7 +114,8 @@ public actor ServiceAccountTokenProvider: TokenProvider {
             accessToken: response.accessToken,
             tokenType: response.tokenType,
             issuedAt: iat,
-            expiresIn: response.expiresIn
+            expiresIn: response.expiresIn,
+            quotaProjectID: nil
         )
 
         self.token = token
