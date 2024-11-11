@@ -33,6 +33,13 @@ All token providers share the same interface, so you just need to instantiate co
 try await provider.token()
 ```
 
+Once you get your token, it is recommended to use its helper function to modify required headers on your `URLRequest`
+
+```swift
+var request = URLRequest(url: url)
+token.add(to: &request)
+```
+
 Currently you can use 3 token providers, it is suggested to use `DefaultCredentialsTokenProvider` as it can be safely used in local and also in server environment.
 
 `DefaultCredentialsTokenProvider` implements part of [Google Application Default Credentials](https://cloud.google.com/docs/authentication/application-default-credentials). It internally uses `ServiceAccountTokenProvider` and `GoogleRefreshTokenProvider`.
