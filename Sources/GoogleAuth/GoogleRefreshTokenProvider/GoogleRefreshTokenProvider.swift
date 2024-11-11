@@ -78,7 +78,8 @@ public actor GoogleRefreshTokenProvider: TokenProvider {
             accessToken: response.accessToken,
             tokenType: response.tokenType,
             issuedAt: iat,
-            expiresIn: response.expiresIn
+            expiresIn: response.expiresIn,
+            quotaProjectID: credentials.quotaProjectID
         )
 
         self.token = token
